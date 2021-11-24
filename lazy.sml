@@ -2,7 +2,7 @@ type def_idx = int
 type env_idx = int
 
 datatype term =
-         TVAR of int
+         TVAR of env_idx
          | TLAM of term
          | TAPP of term * term
          | TREF of def_idx
@@ -35,7 +35,7 @@ fun splitAt (ls, n) = let
       in (x :: xs', xs'') end
     in if n <= 0 then ([], ls) else splitAt' (ls, n) end
 
-fun papp (neu, args) = if length args > 0 then VAPP (neu, args) else VNEU neu
+fun papp (neu, args) = if null args then VNEU neu else VAPP (neu, args)
 
 fun eval (defs, trm, env, args) =
     case trm of
@@ -75,19 +75,19 @@ fun eval (defs, trm, env, args) =
                  (VNEU (NINT a), VNEU (NINT b)) => papp (NINT (a-b), args)
                | _ => papp (NSUB (value1, value2), args))
         end
-      | TEQZ (idx, case1, case2) => 
+      | TEQZ (idx, case1, case2) =>
         let
             val value = force(defs, List.nth (env, idx))
         in
             (case value of
                  VNEU (NINT a) =>
                  if a = 0
-                 then eval (defs, case1, env, args) 
-                 else eval (defs, case2, env, args) 
+                 then eval (defs, case1, env, args)
+                 else eval (defs, case2, env, args)
                | _ => papp (NEQZ (value, env, case1, case2), args))
         end
 and apply (defs, value, args) =
-    if length args = 0 then value else  
+    if null args then value else
     case value of
         VAPP (neu, args') => VAPP (neu, args' @ args)
       | VNEU neu => VAPP (neu, args)
