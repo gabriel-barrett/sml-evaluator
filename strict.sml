@@ -14,7 +14,7 @@ datatype term =
 
 datatype value =
          VNEU of neutral
-         | VAPP of neutral * thunk list
+         | VAPP of neutral * value list
          | VLAM of term * value list
      and neutral =
          NVAR of int
@@ -23,8 +23,6 @@ datatype value =
          | NMUL of value * value
          | NSUB of value * value
          | NEQZ of value * value list * term * term
-     and thunk =
-         SUS of term * value list
 
 fun splitAt (ls, n) = let
     fun splitAt' ([], _) = ([], [])
@@ -39,10 +37,10 @@ fun papp (neu, args) = if length args > 0 then VAPP (neu, args) else VNEU neu
 fun eval (defs, trm, env, args) =
     case trm of
         TAPP (func, arg) =>
-        let val thunk = SUS (arg, env)
-        in eval (defs, func, env, thunk :: args) end
+        let val arg = eval(defs, arg, env, [])
+        in eval (defs, func, env, arg :: args) end
       | TLAM bod => (case args of
-                        (arg :: args) => eval (defs, bod, force (defs, arg) :: env, args)
+                        (arg :: args) => eval (defs, bod, arg :: env, args)
                       | [] => VLAM (bod, env))
       | TVAR idx => apply (defs, List.nth (env, idx), args)
       | TREF idx => eval (defs, Vector.sub (defs, idx), [], args)
@@ -74,15 +72,15 @@ fun eval (defs, trm, env, args) =
                  (VNEU (NINT a), VNEU (NINT b)) => papp (NINT (a-b), args)
                | _ => papp (NSUB (value1, value2), args))
         end
-      | TEQZ (idx, case1, case2) => 
+      | TEQZ (idx, case1, case2) =>
         let
             val value = List.nth (env, idx)
         in
             (case value of
                  VNEU (NINT a) =>
                  if a = 0
-                 then eval (defs, case1, env, args) 
-                 else eval (defs, case2, env, args) 
+                 then eval (defs, case1, env, args)
+                 else eval (defs, case2, env, args)
                | _ => papp (NEQZ (value, env, case1, case2), args))
         end
 and apply (defs, value, args) =
@@ -90,9 +88,7 @@ and apply (defs, value, args) =
     case value of
         VAPP (neu, args') => VAPP (neu, args' @ args)
       | VNEU neu => VAPP (neu, args)
-      | VLAM (trm, env) => eval (defs, trm, force (defs, List.hd args) :: env, List.tl args)
-and force (defs, thunk) = case thunk of
-                              SUS (trm, env) => eval (defs, trm, env, [])
+      | VLAM (trm, env) => eval (defs, trm, List.hd args :: env, List.tl args)
 
 fun printVal t = case t of
                      VNEU (NINT num) => print (Int.toString num ^ "\n")

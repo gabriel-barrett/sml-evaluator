@@ -1,13 +1,16 @@
+type def_idx = int
+type env_idx = int
+
 datatype term =
          TVAR of int
          | TLAM of term
          | TAPP of term * term
-         | TREF of int
+         | TREF of def_idx
          | TINT of int
-         | TADD of int * int
-         | TMUL of int * int
-         | TSUB of int * int
-         | TEQZ of int * term * term
+         | TADD of env_idx * env_idx
+         | TMUL of env_idx * env_idx
+         | TSUB of env_idx * env_idx
+         | TEQZ of env_idx * term * term
 
 datatype value =
          VNEU of neutral
@@ -31,8 +34,6 @@ fun splitAt (ls, n) = let
           val (xs', xs'') = splitAt' (xs, m - 1)
       in (x :: xs', xs'') end
     in if n <= 0 then ([], ls) else splitAt' (ls, n) end
-
-exception Impossible
 
 fun papp (neu, args) = if length args > 0 then VAPP (neu, args) else VNEU neu
 
@@ -127,11 +128,9 @@ val map1T = TLAM (TAPP (TAPP (TVAR 0, TREF 1), TLAM (TLAM (TAPP (TAPP (TREF 0, T
 
 val addT = TLAM (TLAM (TADD (1, 0)));
 val subT = TLAM (TLAM (TSUB (1, 0)));
-(* val valT = TINT 5000000 *)
 val valT = TINT 2000000
 val listT = TAPP (TAPP (TREF 2, TREF 4), TINT 1)
-(* val mainT = TAPP (TREF 3, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TREF 5)))))))))) *)
-val mainT = TAPP (TREF 3, TREF 5)
+val mainT = TAPP (TREF 3, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TAPP (TREF 7, TREF 5))))))))))
 
 val defs = Vector.fromList [consT, nilT, repeatT, sumT, valT, listT, mainT, map1T, addT, subT]
 val main = printVal (eval (defs, Vector.sub(defs, 6), [], []))
