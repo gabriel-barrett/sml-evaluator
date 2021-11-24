@@ -27,14 +27,6 @@ datatype value =
          SUS of term * thunk ref list
          | RES of value
 
-fun splitAt (ls, n) = let
-    fun splitAt' ([], _) = ([], [])
-      | splitAt' (x :: xs, 1) = ([x], xs)
-      | splitAt' (x :: xs, m) = let
-          val (xs', xs'') = splitAt' (xs, m - 1)
-      in (x :: xs', xs'') end
-    in if n <= 0 then ([], ls) else splitAt' (ls, n) end
-
 fun papp (neu, args) = if null args then VNEU neu else VAPP (neu, args)
 
 fun eval (defs, trm, env, args) =
